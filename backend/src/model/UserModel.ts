@@ -5,7 +5,7 @@ import mongoose, {
   isValidObjectId,
 } from "mongoose";
 import { InferType, ObjectSchema, mixed, object, string } from "yup";
-import { OmitStrict, UserRole } from "../types";
+import { OmitStrict, Overwrite, UserRole } from "../types";
 import { WithId } from "../utils";
 
 /* -------------------------------- mongoose -------------------------------- */
@@ -77,6 +77,15 @@ export const userModel = mongoose.model("User", userModelSchema);
 
 type UserModelSchema = InferSchemaType<typeof userModelSchema>;
 export type User = WithId<OmitStrict<UserModelSchema, "password">>;
+export type UserJson = Overwrite<
+  User,
+  {
+    _id: string;
+    cart: string[];
+    orderIds: string[];
+    productsCreated: string[];
+  }
+>;
 
 /* ------------------------------- validation ------------------------------- */
 
@@ -111,6 +120,10 @@ const cartAddItemValidator = object({
 });
 
 export type CartAddItemSchema = InferType<typeof cartAddItemValidator>;
+export type CartAddItemSchemaJson = Overwrite<
+  CartAddItemSchema,
+  { productId: string }
+>;
 
 export const validators = {
   createUser: createUserValidator,

@@ -21,3 +21,13 @@ export enum UserRole {
   user = "user",
   seller = "seller",
 }
+
+export interface ResponseBody<Data> {
+  error: string | null;
+  data: Data;
+}
+
+export interface ApiType<Req, Res> {
+  request: Req;
+  response: Res;
+}

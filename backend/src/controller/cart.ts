@@ -1,15 +1,27 @@
-import { Request, Response, Router } from "express";
+import { Router } from "express";
 import { ApiError } from "../error";
 import { authenticate } from "../middleware/auth";
 import { asyncHandler } from "../middleware/error";
-import { CartItem, cartItemModel } from "../model/CartItem";
-import { Product, productModel } from "../model/ProductModel";
-import { userModel, validators } from "../model/UserModel";
-import { Overwrite, UserRole } from "../types";
+import { CartItem, CartItemJson, cartItemModel } from "../model/CartItem";
+import { ProductJson, productModel } from "../model/ProductModel";
+import {
+  CartAddItemSchemaJson,
+  userModel,
+  validators,
+} from "../model/UserModel";
+import { ApiType, Overwrite, ResponseBody, UserRole } from "../types";
 import { HttpStatusCode } from "../utils";
-import { ProductResponse } from "./product";
 
 export const cartRouter = Router();
+
+export interface CartApiTypes {
+  addOneProduct: ApiType<CartAddItemSchemaJson, ResponseBody<null>>;
+  getAllProducts: ApiType<
+    null,
+    ResponseBody<Overwrite<CartItemJson, { product: ProductJson }>[]>
+  >;
+  removeOneProduct: ApiType<null, ResponseBody<null>>;
+}
 
 /* Add product to logged in user's cart */
 cartRouter.post(
@@ -31,6 +43,11 @@ cartRouter.post(
       cart: CartItem[];
     }>("cart");
 
+    const ret: CartApiTypes["addOneProduct"]["response"] = {
+      data: null,
+      error: null,
+    };
+
     for (let i = 0; i < populatedCart.cart.length; i++) {
       // find the product in the cart
       if (populatedCart.cart[i].product.equals(productId)) {
@@ -39,9 +56,7 @@ cartRouter.post(
           { _id: populatedCart.cart[i]._id },
           { count: populatedCart.cart[i].count + 1 }
         );
-        return res
-          .status(HttpStatusCode.Ok)
-          .json({ message: "Product added to cart" });
+        return res.status(HttpStatusCode.Ok).json(ret);
       }
     }
 
@@ -53,32 +68,31 @@ cartRouter.post(
 
     foundUser.cart.push(newCartItem._id);
     await foundUser.save();
-    return res
-      .status(HttpStatusCode.Ok)
-      .json({ message: "Product added to cart" });
+    return res.status(HttpStatusCode.Ok).json(ret);
   })
 );
-
-export interface CartGetAllResponse {
-  cart: Overwrite<CartItem, { product: ProductResponse["product"] }>[];
-}
 
 /* Get user's cart */
 cartRouter.get(
   "/",
   authenticate(UserRole.user),
-  asyncHandler(async (req: Request, res: Response<CartGetAllResponse>) => {
+  asyncHandler(async (req, res) => {
     const { user } = res.locals;
     const foundUser = (await userModel.findById(user._id))!;
     // ALERT: type check populate path
     const populatedUser = await foundUser.populate<{
-      cart: Overwrite<CartItem, { product: Product }>[];
+      cart: Overwrite<CartItemJson, { product: ProductJson }>[];
     }>({
       path: "cart",
       populate: "product",
     });
 
-    return res.status(HttpStatusCode.Ok).json({ cart: populatedUser.cart });
+    const ret: CartApiTypes["getAllProducts"]["response"] = {
+      error: null,
+      data: populatedUser.cart,
+    };
+
+    return res.status(HttpStatusCode.Ok).json(ret);
   })
 );
 
@@ -116,13 +130,17 @@ cartRouter.delete(
             { count: populatedCart.cart[i].count - 1 }
           );
         }
-        return res
-          .status(HttpStatusCode.Ok)
-          .json({ message: "Product removed from cart" });
+        const ret: CartApiTypes["removeOneProduct"]["response"] = {
+          data: null,
+          error: null,
+        };
+        return res.status(HttpStatusCode.Ok).json(ret);
       }
     }
-    return res
-      .status(HttpStatusCode.NotFound)
-      .json({ message: "Product not found in cart" });
+    const ret: CartApiTypes["removeOneProduct"]["response"] = {
+      data: null,
+      error: "Product not found in cart",
+    };
+    return res.status(HttpStatusCode.NotFound).json(ret);
   })
 );

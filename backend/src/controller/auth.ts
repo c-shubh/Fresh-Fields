@@ -1,17 +1,28 @@
 import bcrypt from "bcrypt";
-import { Response, Router } from "express";
+import { Router } from "express";
 import jwt from "jsonwebtoken";
 import { ApiError } from "../error";
 import { asyncHandler } from "../middleware/error";
-import { User, userModel, validators } from "../model/UserModel";
-import { Overwrite } from "../types";
+import {
+  CreateUserSchema,
+  LoginUserSchema,
+  UserJson,
+  userModel,
+  validators,
+} from "../model/UserModel";
+import { ApiType, ResponseBody } from "../types";
 import { HttpStatusCode } from "../utils";
 
 export const authRouter = Router();
 
+export interface AuthApiTypes {
+  signup: ApiType<CreateUserSchema, ResponseBody<null>>;
+  login: ApiType<LoginUserSchema, ResponseBody<LoginResponse>>;
+}
+
 authRouter.post(
   "/signup",
-  asyncHandler(async (req, res: Response) => {
+  asyncHandler(async (req, res) => {
     const user = validators.createUser.validateSync(req.body);
     const { password, ...userWithoutPassword } = user;
     const saltRounds = 10;
@@ -20,28 +31,22 @@ authRouter.post(
       ...userWithoutPassword,
       password: hashedPassword,
     });
-    res
-      .status(HttpStatusCode.Created)
-      .json({ message: "Registration successful" });
+    const ret: AuthApiTypes["signup"]["response"] = {
+      error: null,
+      data: null,
+    };
+    res.status(HttpStatusCode.Created).json(ret);
   })
 );
 
 export interface LoginResponse {
   token: string;
-  user: Overwrite<
-    User,
-    {
-      _id: string;
-      cart: string[];
-      orderIds: string[];
-      productsCreated: string[];
-    }
-  >;
+  user: UserJson;
 }
 
 authRouter.post(
   "/login",
-  asyncHandler(async (req, res: Response<LoginResponse>) => {
+  asyncHandler(async (req, res) => {
     const credentials = validators.loginUser.validateSync(req.body);
     const user = await userModel.findOne({ email: credentials.email });
     if (!user || !bcrypt.compareSync(credentials.password, user.password)) {
@@ -57,6 +62,14 @@ authRouter.post(
       expiresIn: "7d",
     });
 
-    res.status(HttpStatusCode.Ok).json({ token, user: user.toObject() });
+    const ret: AuthApiTypes["login"]["response"] = {
+      error: null,
+      data: {
+        token,
+        user: user.toJSON(),
+      },
+    };
+
+    res.status(HttpStatusCode.Ok).json(ret);
   })
 );

@@ -1,17 +1,7 @@
 import type { AxiosInstance } from "axios";
-import type { LoginResponse } from "./controller/auth";
-import type { CartGetAllResponse } from "./controller/cart";
-import type { ProductResponse } from "./controller/product";
-import type {
-  CreateProductSchema,
-  PatchProductSchema,
-} from "./model/ProductModel";
-import type {
-  CartAddItemSchema,
-  CreateUserSchema,
-  LoginUserSchema,
-} from "./model/UserModel";
-import type { MessageResponse, Overwrite } from "./types";
+import type { AuthApiTypes } from "./controller/auth";
+import type { CartApiTypes } from "./controller/cart";
+import type { ProductApiTypes } from "./controller/product";
 
 export class ApiClient {
   constructor(private client: AxiosInstance) {}
@@ -26,72 +16,81 @@ export class ApiClient {
 
   /* --------------------------------- Auth --------------------------------- */
 
-  signup = async (data: CreateUserSchema) =>
-    await this.client.post<MessageResponse>("/auth/signup", data);
+  signup = async (data: AuthApiTypes["signup"]["request"]) =>
+    await this.client.post<AuthApiTypes["signup"]["response"]>(
+      "/auth/signup",
+      data
+    );
 
-  login = async (data: LoginUserSchema) =>
-    await this.client.post<LoginResponse>("/auth/login", data);
+  login = async (data: AuthApiTypes["login"]["request"]) =>
+    await this.client.post<AuthApiTypes["login"]["response"]>(
+      "/auth/login",
+      data
+    );
 
   /* ------------------------------- Product -------------------------------- */
 
-  createProduct = async (data: CreateProductSchema, token: string) =>
-    await this.client.post<ProductResponse>(
+  createProduct = async (
+    data: ProductApiTypes["create"]["request"],
+    token: string
+  ) =>
+    await this.client.post<ProductApiTypes["create"]["response"]>(
       "/product",
       data,
       ApiClient.bearerToken(token)
     );
 
   getAllProducts = async () =>
-    await this.client.get<{ products: ProductResponse["product"][] }>(
-      "/product"
-    );
+    await this.client.get<ProductApiTypes["getAll"]["response"]>("/product");
 
   getOneProduct = async (id: string) =>
-    await this.client.get<ProductResponse>(`/product/${id}`);
+    await this.client.get<ProductApiTypes["getOne"]["response"]>(
+      `/product/${id}`
+    );
 
   updateOneProduct = async (
     id: string,
-    data: PatchProductSchema,
+    data: ProductApiTypes["updateOne"]["request"],
     token: string
   ) =>
-    await this.client.patch<ProductResponse>(
+    await this.client.patch<ProductApiTypes["updateOne"]["response"]>(
       `/product/${id}`,
       data,
       ApiClient.bearerToken(token)
     );
 
   deleteOneProduct = async (id: string, token: string) =>
-    await this.client.delete<MessageResponse>(
+    await this.client.delete<ProductApiTypes["deleteOne"]["response"]>(
       `/product/${id}`,
       ApiClient.bearerToken(token)
     );
 
-  search = async (query: string) =>
-    await this.client.post<{ products: ProductResponse["product"][] }>(
+  search = async (data: ProductApiTypes["search"]["request"]) =>
+    await this.client.post<ProductApiTypes["search"]["response"]>(
       "/product/search",
-      { q: query }
+      data
     );
 
   /* --------------------------------- Cart --------------------------------- */
 
   addOneProductToCart = async (
-    data: Overwrite<CartAddItemSchema, { productId: string }>,
+    data: CartApiTypes["addOneProduct"]["request"],
     token: string
   ) =>
-    await this.client.post<MessageResponse>(
+    await this.client.post<CartApiTypes["addOneProduct"]["response"]>(
       `/cart`,
       data,
       ApiClient.bearerToken(token)
     );
 
   getAllProductsFromCart = async (token: string) =>
-    await this.client.get<CartGetAllResponse>(
+    await this.client.get<CartApiTypes["getAllProducts"]["response"]>(
       "/cart",
       ApiClient.bearerToken(token)
     );
 
   removeOneProductFromCart = async (productId: string, token: string) =>
-    await this.client.delete(
+    await this.client.delete<CartApiTypes["removeOneProduct"]["response"]>(
       `/cart/${productId}`,
       ApiClient.bearerToken(token)
     );

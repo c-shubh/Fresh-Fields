@@ -8,6 +8,7 @@ import {
 import { MongoServerError } from "mongodb";
 import { Logger } from "../Logger";
 import { ApiError } from "../error";
+import { ResponseBody } from "../types";
 import { HttpStatusCode } from "../utils";
 
 enum MongoServerErrorCode {
@@ -21,15 +22,20 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     return res.status(err.statusCode).json({ error: err.message });
   } else if (err instanceof MongoServerError) {
     switch (err.code) {
-      case MongoServerErrorCode.DuplicateKey:
-        return res
-          .status(HttpStatusCode.BadRequest)
-          .json({ error: "User already exists" });
+      case MongoServerErrorCode.DuplicateKey: {
+        const ret: ResponseBody<null> = {
+          data: null,
+          error: "User already exists",
+        };
+        return res.status(HttpStatusCode.BadRequest).json(ret);
+      }
     }
   }
-  res
-    .status(HttpStatusCode.InternalServerError)
-    .json({ error: (err as Error).message });
+  const ret: ResponseBody<null> = {
+    data: null,
+    error: (err as Error).message,
+  };
+  res.status(HttpStatusCode.InternalServerError).json(ret);
 
   req;
   next;

@@ -1,6 +1,6 @@
 import mongoose, { InferSchemaType, SchemaTypes } from "mongoose";
 import { InferType, ObjectSchema, number, object, string } from "yup";
-import { OmitStrict } from "../types";
+import { OmitStrict, Overwrite } from "../types";
 import { WithId } from "../utils";
 
 const productModelSchema = new mongoose.Schema({
@@ -47,6 +47,7 @@ export const productModel = mongoose.model("Product", productModelSchema);
 
 type ProductModelSchema = InferSchemaType<typeof productModelSchema>;
 export type Product = WithId<ProductModelSchema>;
+export type ProductJson = Overwrite<Product, { _id: string; ownerId: string }>;
 
 const createProductValidator: ObjectSchema<
   OmitStrict<ProductModelSchema, "ownerId">

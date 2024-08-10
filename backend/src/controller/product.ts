@@ -1,23 +1,34 @@
-import { Request, Response, Router } from "express";
+import { Request, Router } from "express";
 import { ApiError } from "../error";
 import { authenticate } from "../middleware/auth";
 import { asyncHandler } from "../middleware/error";
-import { Product, productModel, validators } from "../model/ProductModel";
+import {
+  CreateProductSchema,
+  PatchProductSchema,
+  ProductJson,
+  productModel,
+  validators,
+} from "../model/ProductModel";
 import { userModel } from "../model/UserModel";
-import { Overwrite, UserRole } from "../types";
+import { ApiType, ResponseBody, UserRole } from "../types";
 import { HttpStatusCode } from "../utils";
 
 export const productRouter = Router();
 
-export interface ProductResponse {
-  product: Overwrite<Product, { _id: string; ownerId: string }>;
+export interface ProductApiTypes {
+  create: ApiType<CreateProductSchema, ResponseBody<ProductJson>>;
+  getAll: ApiType<null, ResponseBody<ProductJson[]>>;
+  getOne: ApiType<null, ResponseBody<ProductJson>>;
+  updateOne: ApiType<PatchProductSchema, ResponseBody<ProductJson>>;
+  deleteOne: ApiType<string, ResponseBody<null>>;
+  search: ApiType<{ q: string }, ResponseBody<ProductJson[]>>;
 }
 
 /* Create a product */
 productRouter.post(
   "/",
   authenticate(UserRole.seller),
-  asyncHandler(async (req: Request, res: Response<ProductResponse>) => {
+  asyncHandler(async (req: Request, res) => {
     const product = validators.createProduct.validateSync(req.body);
     const createdProduct = await productModel.create({
       ...product,
@@ -28,9 +39,11 @@ productRouter.post(
         productsCreated: createdProduct._id,
       },
     });
-    return res
-      .status(HttpStatusCode.Created)
-      .json({ product: createdProduct.toObject() });
+    const ret: ProductApiTypes["create"]["response"] = {
+      error: null,
+      data: createdProduct.toJSON(),
+    };
+    return res.status(HttpStatusCode.Created).json(ret);
   })
 );
 
@@ -39,7 +52,11 @@ productRouter.get(
   "/",
   asyncHandler(async (req, res) => {
     const products = await productModel.find();
-    res.status(HttpStatusCode.Ok).json({ products });
+    const ret: ProductApiTypes["getAll"]["response"] = {
+      error: null,
+      data: products.map((product) => product.toJSON()),
+    };
+    res.status(HttpStatusCode.Ok).json(ret);
   })
 );
 
@@ -52,7 +69,11 @@ productRouter.get(
     if (!product) {
       throw new ApiError(HttpStatusCode.NotFound, "Product not found");
     }
-    res.status(HttpStatusCode.Ok).json({ product: product.toObject() });
+    const ret: ProductApiTypes["getOne"]["response"] = {
+      error: null,
+      data: product.toJSON(),
+    };
+    res.status(HttpStatusCode.Ok).json(ret);
   })
 );
 
@@ -73,7 +94,11 @@ productRouter.patch(
     }
     product.set(patch);
     await product.save();
-    return res.status(HttpStatusCode.Ok).json({ product: product.toObject() });
+    const ret: ProductApiTypes["updateOne"]["response"] = {
+      error: null,
+      data: product.toJSON(),
+    };
+    return res.status(HttpStatusCode.Ok).json(ret);
   })
 );
 
@@ -92,7 +117,12 @@ productRouter.delete(
       throw new ApiError(HttpStatusCode.Unauthorized, "Unauthorized");
     }
     await product.deleteOne();
-    return res.status(HttpStatusCode.Ok).json({ message: "Product deleted" });
+    const ret: ProductApiTypes["deleteOne"]["response"] = {
+      error: null,
+      data: null,
+    };
+
+    return res.status(HttpStatusCode.Ok).json(ret);
   })
 );
 
@@ -105,7 +135,10 @@ productRouter.post(
     const products = await productModel
       .find({ $text: { $search: searchQuery } })
       .exec();
-
-    res.json({ products });
+    const ret: ProductApiTypes["search"]["response"] = {
+      error: null,
+      data: products.map((p) => p.toJSON()),
+    };
+    res.json(ret);
   })
 );
