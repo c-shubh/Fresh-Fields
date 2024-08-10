@@ -1,4 +1,4 @@
-import { ProductResponse } from "@backend/controller/product";
+import type { ProductApiTypes } from "@backend/controller/product";
 import { UserRole } from "@backend/types";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
@@ -20,52 +20,66 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../hooks";
 import { API } from "../services";
-import { errorSnackbar, getErrorMessage, successSnackbar } from "../utils";
+import {
+  errorSnackbar,
+  getErrorMessage,
+  ProductMode,
+  successSnackbar,
+} from "../utils";
 
 interface ProductProps {
-  edit?: boolean;
-  new?: boolean;
+  mode: ProductMode;
 }
 
+/**
+ * User for the following:
+ * 1. Display existing product details
+ * 2. Edit existing product
+ * 3. Create new product
+ */
 export default function ProductPage(props: ProductProps) {
   const navigate = useNavigate();
   const { account, isLoggedIn } = useAuth();
-  const params = useParams();
-  const [product, setProduct] = useState<ProductResponse["product"] | null>(
-    null,
-  );
-  type FormValuesT = Omit<ProductResponse["product"], "_id"> & { _id?: string };
+  const params = useParams<{ productId?: string }>();
+  // stores current product
+  const [product, setProduct] = useState<
+    ProductApiTypes["getOne"]["response"]["data"] | null
+  >(null);
+  // form for new/edit product
+  type FormValuesT = Omit<NonNullable<typeof product>, "_id"> & {
+    _id?: string;
+  };
   const { register, reset, handleSubmit } = useForm<FormValuesT>({
     defaultValues: useMemo(() => {
-      return product!;
+      if (product) return product;
+      return {};
     }, [product]),
   });
-  const [quantity, setQuantity] = useState(1);
-  const newProduct = props.new;
-  const editProduct = props.edit;
 
+  const isViewMode = props.mode === ProductMode.VIEW;
+  const isNewMode = props.mode === ProductMode.NEW;
+  const isEditMode = props.mode === ProductMode.EDIT;
+
+  // fetch current product details if in view/edit mode
   useEffect(() => {
-    const asyncFn = async () => {
-      if (!params.productId) return;
+    const asyncFn = async (productId: string) => {
       try {
-        const ret = await API.getOneProduct(params.productId);
-        setProduct(ret.data.product);
-        reset(ret.data.product);
+        const ret = await API.getOneProduct(productId);
+        setProduct(ret.data.data);
+        reset(ret.data.data);
       } catch (err) {
         errorSnackbar(getErrorMessage(err));
       }
     };
 
-    asyncFn();
-  }, [params.productId, reset]);
-
-  if (!product && !newProduct) {
-    return <div>Loading...</div>;
-  }
+    if ((isViewMode || isEditMode) && params.productId) {
+      asyncFn(params.productId);
+    }
+  }, [isEditMode, isViewMode, params.productId, reset]);
 
   const onSubmit = async (data: FormValuesT) => {
     let errorMessage;
-    if (newProduct) {
+    if (isNewMode) {
       try {
         // send request
         await API.createProduct(data, account!.token);
@@ -77,7 +91,7 @@ export default function ProductPage(props: ProductProps) {
         errorMessage = getErrorMessage(error);
       }
       errorSnackbar(errorMessage);
-    } else if (editProduct && data._id) {
+    } else if (isEditMode && data._id) {
       try {
         // send request
         await API.updateOneProduct(data._id, data, account!.token);
@@ -91,28 +105,10 @@ export default function ProductPage(props: ProductProps) {
     }
   };
 
-  // const product = {
-  //   _id: "4u-12389ucrpasdufr984",
-  //   ownerId: "3948uraoise3r948ur98",
-  //   description:
-  //     "The slim & simple Maple Gaming Keyboard from Dev Byte comes with a sleek body and 7- Color RGB LED Back-lighting for smart functionality",
-  //   imageUrl: "https://loremflickr.com/640/480?lock=2920861730340864",
-  //   price: 125.0,
-  //   productName: "Fall Limited Edition Sneakers",
-  //   quantity: 66,
-  // };
-
-  const increaseQuantity = () => {
-    if (quantity < product.quantity) {
-      setQuantity(quantity + 1);
-    }
-  };
-
-  const decreaseQuantity = () => {
-    if (quantity > 0) {
-      setQuantity(quantity - 1);
-    }
-  };
+  // if in view/edit mode and product hasn't loaded, show loading
+  if ((isViewMode || isEditMode) && !product) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <Container
@@ -120,184 +116,178 @@ export default function ProductPage(props: ProductProps) {
       component={"form"}
       onSubmit={handleSubmit(onSubmit)}
     >
-      {newProduct || product ? (
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={6}>
-            {editProduct ? (
-              <TextField
-                fullWidth
-                type="url"
-                label="Image URL"
-                required
-                {...register("imageUrl")}
-              />
+      <Grid container spacing={4}>
+        <Grid item xs={12} md={6}>
+          {product ? (
+            <img
+              src={product.imageUrl}
+              alt={product.productName}
+              style={{ width: "100%", borderRadius: "10px" }}
+            />
+          ) : (
+            <TextField
+              fullWidth
+              type="url"
+              label="Image URL"
+              required
+              {...register("imageUrl")}
+            />
+          )}
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Stack spacing={3}>
+            <Typography variant="overline" display="block" gutterBottom>
+              Product Details
+            </Typography>
+            {isViewMode && product ? (
+              <Typography variant="h4" gutterBottom>
+                {product.productName}
+              </Typography>
             ) : (
-              <img
-                src={product.imageUrl}
-                alt={product.productName}
-                style={{ width: "100%", borderRadius: "10px" }}
+              <TextField
+                label="Product name"
+                required
+                {...register("productName")}
               />
             )}
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Stack spacing={3}>
-              <Typography variant="overline" display="block" gutterBottom>
-                Product Details
+            {isViewMode && product ? (
+              <Typography variant="body1" color="textSecondary" paragraph>
+                {product.description}
               </Typography>
-              {editProduct ? (
-                <TextField
-                  label="Product name"
+            ) : (
+              <TextField
+                multiline
+                rows={5}
+                label="Product Description"
+                required
+                {...register("description")}
+              />
+            )}
+
+            {isViewMode && product ? (
+              <Typography variant="h5" gutterBottom>
+                {new Intl.NumberFormat("en-IN", {
+                  style: "currency",
+                  currency: "INR",
+                  maximumFractionDigits: 0,
+                }).format(product.price)}
+              </Typography>
+            ) : (
+              <FormControl fullWidth sx={{ m: 1 }}>
+                <InputLabel htmlFor="outlined-adornment-amount">
+                  Amount
+                </InputLabel>
+                <OutlinedInput
+                  id="outlined-adornment-amount"
+                  startAdornment={
+                    <InputAdornment position="start">₹</InputAdornment>
+                  }
+                  label="Amount"
                   required
-                  {...register("productName")}
+                  {...register("price")}
                 />
+              </FormControl>
+            )}
+            {/* MARK: Quantity */}
+            <Box display="flex" alignItems="center" mt={2}>
+              {isViewMode && product ? (
+                <Typography>Quantity: {product.quantity}</Typography>
               ) : (
-                <Typography variant="h4" gutterBottom>
-                  {product.productName}
-                </Typography>
-              )}
-              {editProduct ? (
+                // <Paper
+                //   variant="outlined"
+                //   sx={{ display: "flex", alignItems: "center" }}
+                // >
+                //   <IconButton onClick={decreaseQuantity}>
+                //     <RemoveIcon />
+                //   </IconButton>
+                //   <InputBase
+                //     value={quantity}
+                //     readOnly
+                //     inputProps={{
+                //       style: {
+                //         textAlign: "center",
+                //       },
+                //     }}
+                //     sx={{ width: 50 }}
+                //   />
+                //   <IconButton onClick={increaseQuantity}>
+                //     <AddIcon />
+                //   </IconButton>
+                // </Paper>
                 <TextField
-                  multiline
-                  rows={5}
-                  label="Product Description"
+                  label="Quantity"
+                  type="number"
                   required
-                  {...register("description")}
+                  {...register("quantity")}
                 />
-              ) : (
-                <Typography variant="body1" color="textSecondary" paragraph>
-                  {product.description}
-                </Typography>
               )}
 
-              {editProduct ? (
-                <FormControl fullWidth sx={{ m: 1 }}>
-                  <InputLabel htmlFor="outlined-adornment-amount">
-                    Amount
-                  </InputLabel>
-                  <OutlinedInput
-                    id="outlined-adornment-amount"
-                    startAdornment={
-                      <InputAdornment position="start">₹</InputAdornment>
-                    }
-                    label="Amount"
-                    required
-                    {...register("price")}
-                  />
-                </FormControl>
-              ) : (
-                <Typography variant="h5" gutterBottom>
-                  {new Intl.NumberFormat("en-IN", {
-                    style: "currency",
-                    currency: "INR",
-                    maximumFractionDigits: 0,
-                  }).format(product.price)}
-                </Typography>
-              )}
-              {/* MARK: Quantity */}
-              <Box display="flex" alignItems="center" mt={2}>
-                {
-                  editProduct ? (
-                    <TextField
-                      label="Quantity"
-                      type="number"
-                      required
-                      {...register("quantity")}
-                    />
-                  ) : (
-                    <Typography>Quantity: {product.quantity}</Typography>
-                  )
-                  // <Paper
-                  //   variant="outlined"
-                  //   sx={{ display: "flex", alignItems: "center" }}
-                  // >
-                  //   <IconButton onClick={decreaseQuantity}>
-                  //     <RemoveIcon />
-                  //   </IconButton>
-                  //   <InputBase
-                  //     value={quantity}
-                  //     readOnly
-                  //     inputProps={{
-                  //       style: {
-                  //         textAlign: "center",
-                  //       },
-                  //     }}
-                  //     sx={{ width: 50 }}
-                  //   />
-                  //   <IconButton onClick={increaseQuantity}>
-                  //     <AddIcon />
-                  //   </IconButton>
-                  // </Paper>
-                }
-
-                {editProduct ? (
+              {isEditMode || isNewMode ? (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  sx={{ ml: 2 }}
+                  startIcon={<AddIcon />}
+                  type="submit"
+                >
+                  Save details
+                </Button>
+              ) : isLoggedIn && account?.user.role === UserRole.user ? (
+                <Stack direction={"row"}>
                   <Button
                     variant="contained"
                     color="primary"
                     size="large"
                     sx={{ ml: 2 }}
                     startIcon={<AddIcon />}
-                    type="submit"
+                    onClick={async () => {
+                      let errorMessage = "";
+                      try {
+                        await API.addOneProductToCart(
+                          { productId: product!._id },
+                          account!.token,
+                        );
+                        successSnackbar("Product added to cart");
+                        return;
+                      } catch (error) {
+                        errorMessage = getErrorMessage(error);
+                      }
+                      errorSnackbar(errorMessage);
+                    }}
                   >
-                    Save details
+                    Add To Cart
                   </Button>
-                ) : isLoggedIn && account?.user.role === UserRole.user ? (
-                  <Stack direction={"row"}>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      size="large"
-                      sx={{ ml: 2 }}
-                      startIcon={<AddIcon />}
-                      onClick={async () => {
-                        let errorMessage = "";
-                        try {
-                          await API.addOneProductToCart(
-                            { productId: product!._id },
-                            account!.token,
-                          );
-                          successSnackbar("Product added to cart");
-                          return;
-                        } catch (error) {
-                          errorMessage = getErrorMessage(error);
-                        }
-                        errorSnackbar(errorMessage);
-                      }}
-                    >
-                      Add To Cart
-                    </Button>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      size="large"
-                      sx={{ ml: 2 }}
-                      startIcon={<RemoveIcon />}
-                      onClick={async () => {
-                        let errorMessage = "";
-                        try {
-                          // send request
-                          await API.removeOneProductFromCart(
-                            product!._id,
-                            account!.token,
-                          );
-                          successSnackbar("Product removed from cart");
-                          return;
-                        } catch (error) {
-                          errorMessage = getErrorMessage(error);
-                        }
-                        errorSnackbar(errorMessage);
-                      }}
-                    >
-                      Remove from cart
-                    </Button>
-                  </Stack>
-                ) : null}
-              </Box>
-            </Stack>
-          </Grid>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    sx={{ ml: 2 }}
+                    startIcon={<RemoveIcon />}
+                    onClick={async () => {
+                      let errorMessage = "";
+                      try {
+                        // send request
+                        await API.removeOneProductFromCart(
+                          product!._id,
+                          account!.token,
+                        );
+                        successSnackbar("Product removed from cart");
+                        return;
+                      } catch (error) {
+                        errorMessage = getErrorMessage(error);
+                      }
+                      errorSnackbar(errorMessage);
+                    }}
+                  >
+                    Remove from cart
+                  </Button>
+                </Stack>
+              ) : null}
+            </Box>
+          </Stack>
         </Grid>
-      ) : (
-        <div>Loading</div>
-      )}
+      </Grid>
     </Container>
   );
 }

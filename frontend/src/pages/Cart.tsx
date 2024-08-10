@@ -1,4 +1,4 @@
-import { CartGetAllResponse } from "@backend/controller/cart";
+import type { CartApiTypes } from "@backend/controller/cart";
 import { Button } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2/Grid2";
 import { Box } from "@mui/system";
@@ -10,14 +10,16 @@ import { errorSnackbar, getErrorMessage } from "../utils";
 
 export default function Cart() {
   const { account } = useAuth();
-  const [products, setProducts] = useState<CartGetAllResponse["cart"]>([]);
+  const [products, setProducts] = useState<
+    CartApiTypes["getAllProducts"]["response"]["data"]
+  >([]);
 
   useEffect(() => {
     const asyncFn = async () => {
       if (!account) return;
       try {
         const ret = await API.getAllProductsFromCart(account.token);
-        setProducts(ret.data.cart);
+        setProducts(ret.data.data);
       } catch (err) {
         errorSnackbar(getErrorMessage(err));
       }

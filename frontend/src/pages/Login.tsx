@@ -4,9 +4,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { Button, Link, TextField, Typography } from "@mui/material";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
-import Checkbox from "@mui/material/Checkbox";
 import CssBaseline from "@mui/material/CssBaseline";
-import FormControlLabel from "@mui/material/FormControlLabel";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
@@ -33,10 +31,10 @@ export default function SignInSide() {
       const response = await API.login(data);
       // store account details
       console.log({ data: response.data });
-      setAccount(response.data);
+      setAccount(response.data.data);
       // show snackbar
       successSnackbar("Logged in successfully");
-      if (response.data.user.role === UserRole.seller) {
+      if (response.data.data.user.role === UserRole.seller) {
         navigate("/seller/dashboard");
       } else {
         navigate("/");
@@ -109,10 +107,6 @@ export default function SignInSide() {
                 id="password"
                 autoComplete="current-password"
                 {...register("password")}
-              />
-              <FormControlLabel
-                control={<Checkbox value="remember" color="primary" />}
-                label="Remember me"
               />
               <Button
                 type="submit"

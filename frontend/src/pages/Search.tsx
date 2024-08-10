@@ -1,4 +1,4 @@
-import { ProductResponse } from "@backend/controller/product";
+import type { ProductApiTypes } from "@backend/controller/product";
 import {
   Box,
   Divider,
@@ -43,15 +43,17 @@ const Drawer = styled(MuiDrawer)({
 
 export default function PersistentDrawerLeft() {
   const { state } = useLocation();
-  const [products, setProducts] = useState<ProductResponse["product"][]>([]);
+  const [products, setProducts] = useState<
+    ProductApiTypes["search"]["response"]["data"]
+  >([]);
 
   useEffect(() => {
     const asyncFn = async () => {
       let errorMessage = "";
       try {
         // send request
-        const response = await API.search(state.q || "");
-        setProducts(response.data.products);
+        const response = await API.search({ q: state.q || "" });
+        setProducts(response.data.data);
         return;
       } catch (error) {
         errorMessage = getErrorMessage(error);

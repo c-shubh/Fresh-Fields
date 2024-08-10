@@ -1,6 +1,12 @@
 import { AxiosError } from "axios";
 import { enqueueSnackbar } from "notistack";
 
+export enum ProductMode {
+  VIEW,
+  NEW,
+  EDIT,
+}
+
 const autoHideDuration = 3000;
 export function successSnackbar(message: string) {
   enqueueSnackbar({ message, variant: "success", autoHideDuration });

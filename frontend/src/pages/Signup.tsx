@@ -1,4 +1,4 @@
-import type { CreateUserSchema } from "@backend/model/UserModel";
+import { AuthApiTypes } from "@backend/controller/auth";
 import { UserRole } from "@backend/types";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import {
@@ -24,6 +24,8 @@ import { errorSnackbar, getErrorMessage, successSnackbar } from "../utils";
 // TODO remove, this demo shouldn't need to reset the theme.
 const defaultTheme = createTheme();
 
+type CreateUserSchema = AuthApiTypes["signup"]["request"];
+
 export default function Signup() {
   const navigate = useNavigate();
   const { register, handleSubmit, control, setValue } =
@@ -36,12 +38,10 @@ export default function Signup() {
   const onSubmit: SubmitHandler<CreateUserSchema> = async (data) => {
     let errorMessage;
     try {
-      const response = await API.signup(data);
-      if ("message" in response.data) {
-        successSnackbar("Signed up successfully");
-        navigate("/login");
-        return;
-      }
+      await API.signup(data);
+      successSnackbar("Signed up successfully");
+      navigate("/login");
+      return;
     } catch (error) {
       errorMessage = getErrorMessage(error);
     }

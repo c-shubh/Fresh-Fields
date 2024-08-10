@@ -22,6 +22,7 @@ import Profile from "./pages/Profile";
 import Search from "./pages/Search";
 import SellerDashboard from "./pages/SellerDashboard";
 import Signup from "./pages/Signup";
+import { ProductMode } from "./utils";
 
 function Layout(children: ReactNode) {
   return (
@@ -53,9 +54,15 @@ const router = createBrowserRouter([
     { path: "/profile", element: <Profile /> },
     { path: "/search", element: <Search /> },
     { path: "/cart", element: <Cart /> },
-    { path: "/product/:productId", element: <Product /> },
-    { path: "/product/new", element: <Product edit new /> },
-    { path: "/product/edit/:productId", element: <Product edit /> },
+    {
+      path: "/product/:productId",
+      element: <Product mode={ProductMode.VIEW} />,
+    },
+    { path: "/product/new", element: <Product mode={ProductMode.NEW} /> },
+    {
+      path: "/product/edit/:productId",
+      element: <Product mode={ProductMode.EDIT} />,
+    },
     { path: "/seller/dashboard", element: <SellerDashboard /> },
   ]),
   // add routes which do not need the layout (header and footer), below

@@ -1,6 +1,8 @@
-import type { ProductResponse } from "@backend/controller/product";
+import type { ProductApiTypes } from "@backend/controller/product";
+import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import RemoveIcon from "@mui/icons-material/Remove";
 import {
   Badge,
   Box,
@@ -10,23 +12,29 @@ import {
   CardContent,
   CardMedia,
   IconButton,
+  Input,
+  Stack,
   Typography,
 } from "@mui/material";
+import { useState } from "react";
 import LinkHref from "./LinkHref";
 
 interface ProductProps {
-  product: ProductResponse["product"];
+  product: ProductApiTypes["getOne"]["response"]["data"];
   editable?: boolean;
   count?: number;
   delete?: () => void;
 }
 
 export default function Product(props: ProductProps) {
+  const [quantity, setQuantity] = useState(0);
   const { product } = props;
+  const incrementQuantity = () => setQuantity(quantity + 1);
+  const decrementQuantity = () => setQuantity(Math.max(0, quantity - 1));
 
   return (
     <Badge badgeContent={props.count} color="primary">
-      <Card sx={{ minWidth: 250, maxWidth: 345 }}>
+      <Card sx={{ minWidth: 345, maxWidth: 345 }}>
         <CardActionArea
           href={`/product/${product._id}`}
           LinkComponent={LinkHref}

@@ -1,5 +1,7 @@
-import type { LoginResponse } from "@backend/controller/auth";
+import type { AuthApiTypes } from "@backend/controller/auth";
 import { PropsWithChildren, createContext, useEffect, useState } from "react";
+
+type LoginResponse = AuthApiTypes["login"]["response"]["data"];
 
 interface DefaultValue {
   account: LoginResponse | null;

@@ -1,12 +1,4 @@
-import {
-  Box,
-  Button,
-  FormGroup,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { Box, FormGroup, Stack, TextField, Typography } from "@mui/material";
 import { useAuth } from "../hooks";
 
 function PageTitle() {
@@ -32,49 +24,6 @@ function PageTitle() {
       >
         Profile Details
       </Typography>
-    </>
-  );
-}
-
-function ProfileMenu() {
-  const navigate = useNavigate();
-
-  return (
-    <>
-      {/* <PageTitle/> */}
-      <Box
-        sx={{
-          width: 100,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          borderRight: "2px solid #ccc",
-        }}
-      >
-        <Button
-          variant="text"
-          onClick={() => {
-            navigate("/profile");
-          }}
-          sx={{
-            color: "black",
-          }}
-        >
-          Profile
-        </Button>
-
-        <Button
-          variant="text"
-          onClick={() => {
-            navigate("/cart");
-          }}
-          sx={{
-            color: "black",
-          }}
-        >
-          Cart
-        </Button>
-      </Box>
     </>
   );
 }
@@ -171,19 +120,6 @@ function Profile() {
           // marginTop : 10,
         }}
       >
-        <div
-          className="profile-menu"
-          style={{
-            marginLeft: 50,
-            marginRight: 50,
-            display: "flex",
-            flexDirection: "column",
-            textAlign: "left",
-          }}
-        >
-          <ProfileMenu />
-        </div>
-
         <EditMenu />
       </Box>
     </Box>

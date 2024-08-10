@@ -1,4 +1,4 @@
-import { ProductResponse } from "@backend/controller/product";
+import type { ProductApiTypes } from "@backend/controller/product";
 import Grid from "@mui/material/Unstable_Grid2/Grid2";
 import { useEffect, useState } from "react";
 import Product from "../components/Product";
@@ -6,13 +6,15 @@ import { API } from "../services";
 import { errorSnackbar, getErrorMessage } from "../utils";
 
 export default function Home() {
-  const [products, setProducts] = useState<ProductResponse["product"][]>([]);
+  const [products, setProducts] = useState<
+    ProductApiTypes["getAll"]["response"]["data"]
+  >([]);
 
   useEffect(() => {
     const asyncFn = async () => {
       try {
         const response = await API.getAllProducts();
-        setProducts(response.data.products);
+        setProducts(response.data.data);
       } catch (error) {
         errorSnackbar(getErrorMessage(error));
       }

@@ -1,4 +1,4 @@
-import { ProductResponse } from "@backend/controller/product";
+import type { ProductApiTypes } from "@backend/controller/product";
 import { Box, Button, Stack } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2/Grid2";
 import { useEffect, useState } from "react";
@@ -10,7 +10,9 @@ import { errorSnackbar, getErrorMessage, successSnackbar } from "../utils";
 
 export default function SellerDashboard() {
   const { account } = useAuth();
-  const [products, setProducts] = useState<ProductResponse["product"][]>([]);
+  const [products, setProducts] = useState<
+    ProductApiTypes["getAll"]["response"]["data"]
+  >([]);
 
   const deleteProduct = (id: string, token: string) => async () => {
     try {
@@ -26,7 +28,7 @@ export default function SellerDashboard() {
     const asyncFn = async () => {
       try {
         const ret = await API.getAllProducts();
-        setProducts(ret.data.products);
+        setProducts(ret.data.data);
       } catch (err) {
         errorSnackbar(getErrorMessage(err));
       }
