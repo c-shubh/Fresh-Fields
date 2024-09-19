@@ -19,7 +19,8 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { API } from "../services";
-import { errorSnackbar, getErrorMessage, successSnackbar } from "../utils";
+// import { errorSnackbar, getErrorMessage, successSnackbar } from "../utils";
+import { errorSnackbar, successSnackbar } from "../utils";
 
 // TODO remove, this demo shouldn't need to reset the theme.
 const defaultTheme = createTheme();
@@ -28,12 +29,17 @@ type CreateUserSchema = AuthApiTypes["signup"]["request"];
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { register, handleSubmit, control, setValue } =
-    useForm<CreateUserSchema>({
-      defaultValues: {
-        role: UserRole.user,
-      },
-    });
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    formState: { errors },
+  } = useForm<CreateUserSchema>({
+    defaultValues: {
+      role: UserRole.user,
+    },
+  });
 
   const onSubmit: SubmitHandler<CreateUserSchema> = async (data) => {
     let errorMessage;
@@ -43,7 +49,8 @@ export default function Signup() {
       navigate("/login");
       return;
     } catch (error) {
-      errorMessage = getErrorMessage(error);
+      // errorMessage = getErrorMessage(error);
+      errorMessage = "Invalid credentials";
     }
     errorSnackbar(errorMessage);
   };
@@ -98,7 +105,16 @@ export default function Signup() {
                 id="email"
                 label="Email Address"
                 autoComplete="email"
-                {...register("email")}
+                // {...register("email")}
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: "Invalid email",
+                  },
+                })}
+                error={!!errors.email}
+                helperText={errors.email ? errors.email.message : ""}
               />
               <TextField
                 margin="normal"
@@ -108,7 +124,20 @@ export default function Signup() {
                 id="password"
                 label="Password"
                 autoComplete="password"
-                {...register("password")}
+                // {...register("password")}
+                {...register("password", {
+                  required: "Password is required",
+                  minLength: {
+                    value: 8,
+                    message: "Password must be at least 8 characters long",
+                  },
+                  pattern: {
+                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}$/,
+                    message: "Must include 1 lowercase, 1 uppercase, 1 number",
+                  },
+                })}
+                error={!!errors.password}
+                helperText={errors.password ? errors.password.message : ""}
               />
               <TextField
                 margin="normal"
@@ -118,7 +147,10 @@ export default function Signup() {
                 id="username"
                 label="Username"
                 autoComplete="username"
-                {...register("username")}
+                // {...register("username")}
+                {...register("username", { required: "Username is required" })}
+                error={!!errors.username}
+                helperText={errors.username ? errors.username.message : ""}
               />
               <TextField
                 margin="normal"
@@ -128,7 +160,19 @@ export default function Signup() {
                 id="mobileNumber"
                 label="Mobile Number"
                 autoComplete="mobileNumber"
-                {...register("mobileNumber")}
+                // {...register("mobileNumber")}
+                {...register("mobileNumber", {
+                  required: "Mobile number is required",
+                  pattern: {
+                    value: /^\d{10}$/,
+                    message:
+                      "Mobile number must only contain numbers and be exactly 10 digits",
+                  },
+                })}
+                error={!!errors.mobileNumber}
+                helperText={
+                  errors.mobileNumber ? errors.mobileNumber.message : ""
+                }
               />
               <Stack
                 direction={"row"}
