@@ -3,6 +3,7 @@ import { UserRole } from "@backend/types";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import {
   Button,
+  Link,
   // FormGroup,
   Stack,
   TextField,
@@ -17,10 +18,9 @@ import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Link as RRDLink, useNavigate } from "react-router-dom";
 import { API } from "../services";
-// import { errorSnackbar, getErrorMessage, successSnackbar } from "../utils";
-import { errorSnackbar, successSnackbar } from "../utils";
+import { errorSnackbar, getErrorMessage, successSnackbar } from "../utils";
 
 // TODO remove, this demo shouldn't need to reset the theme.
 const defaultTheme = createTheme();
@@ -37,7 +37,7 @@ export default function Signup() {
     formState: { errors },
   } = useForm<CreateUserSchema>({
     defaultValues: {
-      role: UserRole.user,
+      role: UserRole.buyer,
     },
   });
 
@@ -49,8 +49,8 @@ export default function Signup() {
       navigate("/login");
       return;
     } catch (error) {
-      // errorMessage = getErrorMessage(error);
-      errorMessage = "Invalid credentials";
+      errorMessage = getErrorMessage(error);
+      // errorMessage = "Invalid credentials";
     }
     errorSnackbar(errorMessage);
   };
@@ -124,7 +124,6 @@ export default function Signup() {
                 id="password"
                 label="Password"
                 autoComplete="password"
-                // {...register("password")}
                 {...register("password", {
                   required: "Password is required",
                   minLength: {
@@ -144,13 +143,12 @@ export default function Signup() {
                 required
                 fullWidth
                 type="text"
-                id="username"
-                label="Username"
-                autoComplete="username"
-                // {...register("username")}
-                {...register("username", { required: "Username is required" })}
-                error={!!errors.username}
-                helperText={errors.username ? errors.username.message : ""}
+                id="name"
+                label="Name"
+                autoComplete="name"
+                {...register("name", { required: "Name is required" })}
+                error={!!errors.name}
+                helperText={errors.name ? errors.name.message : ""}
               />
               <TextField
                 margin="normal"
@@ -192,10 +190,16 @@ export default function Signup() {
                         onChange={(_, value) => setValue(field.name, value)}
                         exclusive
                       >
-                        <ToggleButton value="user" sx={{ width: 100 }}>
+                        <ToggleButton
+                          value={UserRole.buyer}
+                          sx={{ width: 100 }}
+                        >
                           Buyer
                         </ToggleButton>
-                        <ToggleButton value="seller" sx={{ width: 100 }}>
+                        <ToggleButton
+                          value={UserRole.seller}
+                          sx={{ width: 100 }}
+                        >
                           Seller
                         </ToggleButton>
                       </ToggleButtonGroup>
@@ -211,6 +215,9 @@ export default function Signup() {
               >
                 Sign Up
               </Button>
+              <Link to="/login" variant="body2" component={RRDLink}>
+                {"Already have an account? Login"}
+              </Link>
             </Box>
           </Box>
         </Grid>

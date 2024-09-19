@@ -72,7 +72,7 @@ export default function PersistentDrawerLeft() {
         sx={{ zIndex: zIndex.SearchPageDrawer }}
       >
         <List>
-          {[].map((text, index) => (
+          {[].map((text) => (
             <ListItem key={text} disablePadding>
               <ListItemButton>
                 {/* <ListItemIcon>

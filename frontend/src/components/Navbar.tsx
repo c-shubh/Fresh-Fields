@@ -329,9 +329,11 @@ function Navbar() {
           <PrimarySearchAppBar />
           {isLoggedIn ? (
             <>
-              {account?.user.role === UserRole.user && <Cart />}
+              {account?.user.role === UserRole.buyer && <Cart />}
               <Profile
-                role={(account ? account.user.role : UserRole.user) as UserRole}
+                role={
+                  (account ? account.user.role : UserRole.buyer) as UserRole
+                }
                 {...{ handleClick, open, anchorEl, handleClose, logout }}
               />
             </>

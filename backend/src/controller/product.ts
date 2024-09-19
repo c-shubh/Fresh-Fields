@@ -1,12 +1,14 @@
 import { Request, Router } from "express";
 import { ApiError } from "../error";
-import { authenticate } from "../middleware/auth";
+import { AuthenticatedResponse, authenticate } from "../middleware/auth";
 import { asyncHandler } from "../middleware/error";
 import {
-  CreateProductSchema,
-  PatchProductSchema,
-  ProductJson,
+  NewProduct,
+  Product,
+  SerializedProduct,
+  UpdateProduct,
   productModel,
+  serializeProduct,
   validators,
 } from "../model/ProductModel";
 import { userModel } from "../model/UserModel";
@@ -16,12 +18,12 @@ import { HttpStatusCode } from "../utils";
 export const productRouter = Router();
 
 export interface ProductApiTypes {
-  create: ApiType<CreateProductSchema, ResponseBody<ProductJson>>;
-  getAll: ApiType<null, ResponseBody<ProductJson[]>>;
-  getOne: ApiType<null, ResponseBody<ProductJson>>;
-  updateOne: ApiType<PatchProductSchema, ResponseBody<ProductJson>>;
+  create: ApiType<NewProduct, ResponseBody<SerializedProduct>>;
+  getAll: ApiType<null, ResponseBody<SerializedProduct[]>>;
+  getOne: ApiType<null, ResponseBody<SerializedProduct>>;
+  updateOne: ApiType<UpdateProduct, ResponseBody<SerializedProduct>>;
   deleteOne: ApiType<string, ResponseBody<null>>;
-  search: ApiType<{ q: string }, ResponseBody<ProductJson[]>>;
+  search: ApiType<{ q: string }, ResponseBody<SerializedProduct[]>>;
 }
 
 /* Create a product */
@@ -32,8 +34,9 @@ productRouter.post(
     const product = validators.createProduct.validateSync(req.body);
     const createdProduct = await productModel.create({
       ...product,
-      ownerId: res.locals.user._id,
-    });
+      seller: res.locals.user._id,
+      // TODO: type safety
+    } satisfies NewProduct & { seller: string });
     await userModel.findByIdAndUpdate(res.locals.user._id, {
       $push: {
         productsCreated: createdProduct._id,
@@ -41,7 +44,7 @@ productRouter.post(
     });
     const ret: ProductApiTypes["create"]["response"] = {
       error: null,
-      data: createdProduct.toJSON(),
+      data: serializeProduct(createdProduct),
     };
     return res.status(HttpStatusCode.Created).json(ret);
   })
@@ -50,11 +53,21 @@ productRouter.post(
 /* Read all products */
 productRouter.get(
   "/",
+  authenticate(UserRole.buyer, UserRole.seller, UserRole.public),
   asyncHandler(async (req, res) => {
-    const products = await productModel.find();
+    const { user } = (res as AuthenticatedResponse).locals;
+    let products;
+    if (!user || user.role === "buyer") {
+      products = await productModel.find();
+    } else if (user.role === "seller") {
+      products = await productModel.find({ seller: user._id });
+    } else {
+      throw new ApiError(HttpStatusCode.BadRequest, "Bad request");
+    }
+
     const ret: ProductApiTypes["getAll"]["response"] = {
       error: null,
-      data: products.map((product) => product.toJSON()),
+      data: products.map(serializeProduct),
     };
     res.status(HttpStatusCode.Ok).json(ret);
   })
@@ -71,7 +84,7 @@ productRouter.get(
     }
     const ret: ProductApiTypes["getOne"]["response"] = {
       error: null,
-      data: product.toJSON(),
+      data: serializeProduct(product),
     };
     res.status(HttpStatusCode.Ok).json(ret);
   })
@@ -89,14 +102,14 @@ productRouter.patch(
     if (!product) {
       throw new ApiError(HttpStatusCode.NotFound, "Product not found");
     }
-    if (!product.ownerId.equals(user._id)) {
+    if (!product.seller.equals(user._id)) {
       throw new ApiError(HttpStatusCode.Unauthorized, "Unauthorized");
     }
     product.set(patch);
     await product.save();
     const ret: ProductApiTypes["updateOne"]["response"] = {
       error: null,
-      data: product.toJSON(),
+      data: serializeProduct(product),
     };
     return res.status(HttpStatusCode.Ok).json(ret);
   })
@@ -113,7 +126,7 @@ productRouter.delete(
     if (!product) {
       throw new ApiError(HttpStatusCode.NotFound, "Product not found");
     }
-    if (!product.ownerId.equals(user._id)) {
+    if (!product.seller.equals(user._id)) {
       throw new ApiError(HttpStatusCode.Unauthorized, "Unauthorized");
     }
     await product.deleteOne();
@@ -137,7 +150,7 @@ productRouter.post(
       .exec();
     const ret: ProductApiTypes["search"]["response"] = {
       error: null,
-      data: products.map((p) => p.toJSON()),
+      data: products.map(serializeProduct),
     };
     res.json(ret);
   })

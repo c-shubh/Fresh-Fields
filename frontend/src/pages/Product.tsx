@@ -32,7 +32,7 @@ interface ProductProps {
 }
 
 /**
- * User for the following:
+ * Used for the following:
  * 1. Display existing product details
  * 2. Edit existing product
  * 3. Create new product
@@ -121,7 +121,7 @@ export default function ProductPage(props: ProductProps) {
           {product ? (
             <img
               src={product.imageUrl}
-              alt={product.productName}
+              alt={product.name}
               style={{ width: "100%", borderRadius: "10px" }}
             />
           ) : (
@@ -139,17 +139,15 @@ export default function ProductPage(props: ProductProps) {
             <Typography variant="overline" display="block" gutterBottom>
               Product Details
             </Typography>
+            {/* MARK: Name */}
             {isViewMode && product ? (
               <Typography variant="h4" gutterBottom>
-                {product.productName}
+                {product.name}
               </Typography>
             ) : (
-              <TextField
-                label="Product name"
-                required
-                {...register("productName")}
-              />
+              <TextField label="Product name" required {...register("name")} />
             )}
+            {/* MARK: description */}
             {isViewMode && product ? (
               <Typography variant="body1" color="textSecondary" paragraph>
                 {product.description}
@@ -164,14 +162,18 @@ export default function ProductPage(props: ProductProps) {
               />
             )}
 
+            {/* MARK: price */}
             {isViewMode && product ? (
-              <Typography variant="h5" gutterBottom>
-                {new Intl.NumberFormat("en-IN", {
-                  style: "currency",
-                  currency: "INR",
-                  maximumFractionDigits: 0,
-                }).format(product.price)}
-              </Typography>
+              <Stack direction={"row"} spacing={0} alignItems={"baseline"}>
+                <Typography variant="h5" gutterBottom>
+                  {new Intl.NumberFormat("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                    maximumFractionDigits: 0,
+                  }).format(product.price)}
+                </Typography>
+                <Typography>/{product.units}</Typography>
+              </Stack>
             ) : (
               <FormControl fullWidth sx={{ m: 1 }}>
                 <InputLabel htmlFor="outlined-adornment-amount">
@@ -191,7 +193,9 @@ export default function ProductPage(props: ProductProps) {
             {/* MARK: Quantity */}
             <Box display="flex" alignItems="center" mt={2}>
               {isViewMode && product ? (
-                <Typography>Quantity: {product.quantity}</Typography>
+                <Typography>
+                  Quantity available: {product.quantity} {product.units}
+                </Typography>
               ) : (
                 // <Paper
                 //   variant="outlined"
@@ -214,77 +218,92 @@ export default function ProductPage(props: ProductProps) {
                 //     <AddIcon />
                 //   </IconButton>
                 // </Paper>
-                <TextField
-                  label="Quantity"
-                  type="number"
-                  required
-                  {...register("quantity")}
-                />
+                <Stack direction={"row"} spacing={4}>
+                  <TextField
+                    label="Quantity"
+                    type="number"
+                    required
+                    {...register("quantity")}
+                  />
+                  <TextField
+                    label="Units"
+                    type="text"
+                    inputProps={{
+                      list: "units",
+                    }}
+                    required
+                    {...register("units")}
+                  />
+                  <datalist id="units">
+                    <option value="kg" />
+                    <option value="g" />
+                  </datalist>
+                </Stack>
               )}
-
-              {isEditMode || isNewMode ? (
+            </Box>
+            {isEditMode || isNewMode ? (
+              <Button
+                variant="contained"
+                color="primary"
+                size="large"
+                sx={{ ml: 2 }}
+                startIcon={<AddIcon />}
+                type="submit"
+              >
+                Save details
+              </Button>
+            ) : isLoggedIn && account?.user.role === UserRole.buyer ? (
+              <Stack direction={"row"}>
                 <Button
                   variant="contained"
                   color="primary"
                   size="large"
                   sx={{ ml: 2 }}
                   startIcon={<AddIcon />}
-                  type="submit"
+                  onClick={async () => {
+                    let errorMessage = "";
+                    try {
+                      await API.addOneProductToCart(
+                        // TODO: quantity
+                        { product: product!._id, quantity: 1 },
+                        account!.token,
+                      );
+                      successSnackbar("Product added to cart");
+                      return;
+                    } catch (error) {
+                      errorMessage = getErrorMessage(error);
+                    }
+                    errorSnackbar(errorMessage);
+                  }}
                 >
-                  Save details
+                  Add To Cart
                 </Button>
-              ) : isLoggedIn && account?.user.role === UserRole.user ? (
-                <Stack direction={"row"}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    size="large"
-                    sx={{ ml: 2 }}
-                    startIcon={<AddIcon />}
-                    onClick={async () => {
-                      let errorMessage = "";
-                      try {
-                        await API.addOneProductToCart(
-                          { productId: product!._id },
-                          account!.token,
-                        );
-                        successSnackbar("Product added to cart");
-                        return;
-                      } catch (error) {
-                        errorMessage = getErrorMessage(error);
-                      }
-                      errorSnackbar(errorMessage);
-                    }}
-                  >
-                    Add To Cart
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    size="large"
-                    sx={{ ml: 2 }}
-                    startIcon={<RemoveIcon />}
-                    onClick={async () => {
-                      let errorMessage = "";
-                      try {
-                        // send request
-                        await API.removeOneProductFromCart(
-                          product!._id,
-                          account!.token,
-                        );
-                        successSnackbar("Product removed from cart");
-                        return;
-                      } catch (error) {
-                        errorMessage = getErrorMessage(error);
-                      }
-                      errorSnackbar(errorMessage);
-                    }}
-                  >
-                    Remove from cart
-                  </Button>
-                </Stack>
-              ) : null}
-            </Box>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="large"
+                  sx={{ ml: 2 }}
+                  startIcon={<RemoveIcon />}
+                  onClick={async () => {
+                    let errorMessage = "";
+                    try {
+                      // send request
+                      await API.removeOneProductFromCart(
+                        product!._id,
+                        account!.token,
+                      );
+                      successSnackbar("Product removed from cart");
+                      return;
+                    } catch (error) {
+                      errorMessage = getErrorMessage(error);
+                    }
+                    errorSnackbar(errorMessage);
+                  }}
+                >
+                  Remove from cart
+                </Button>
+              </Stack>
+            ) : null}
           </Stack>
         </Grid>
       </Grid>

@@ -2,6 +2,7 @@ import type { AxiosInstance } from "axios";
 import type { AuthApiTypes } from "./controller/auth";
 import type { CartApiTypes } from "./controller/cart";
 import type { ProductApiTypes } from "./controller/product";
+import { OrderApiTypes } from "./controller/order";
 
 export class ApiClient {
   constructor(private client: AxiosInstance) {}
@@ -84,7 +85,7 @@ export class ApiClient {
     );
 
   getAllProductsFromCart = async (token: string) =>
-    await this.client.get<CartApiTypes["getAllProducts"]["response"]>(
+    await this.client.get<CartApiTypes["getCart"]["response"]>(
       "/cart",
       ApiClient.bearerToken(token)
     );
@@ -92,6 +93,52 @@ export class ApiClient {
   removeOneProductFromCart = async (productId: string, token: string) =>
     await this.client.delete<CartApiTypes["removeOneProduct"]["response"]>(
       `/cart/${productId}`,
+      ApiClient.bearerToken(token)
+    );
+
+  clearCart = async (token: string) =>
+    await this.client.delete<CartApiTypes["clearCart"]["response"]>(
+      "/cart",
+      ApiClient.bearerToken(token)
+    );
+
+  /* -------------------------------- Order --------------------------------- */
+
+  newOrder = async (
+    data: OrderApiTypes["newOrder"]["request"],
+    token: string
+  ) =>
+    await this.client.post<OrderApiTypes["newOrder"]["response"]>(
+      `/order`,
+      data,
+      ApiClient.bearerToken(token)
+    );
+
+  getOrders = async (token: string) =>
+    await this.client.get<OrderApiTypes["getOrders"]["response"]>(
+      "/order",
+      ApiClient.bearerToken(token)
+    );
+
+  updateOrder = async (
+    data: OrderApiTypes["updateOrder"]["request"],
+    orderId: string,
+    token: string
+  ) =>
+    await this.client.put<OrderApiTypes["updateOrder"]["response"]>(
+      `/order/${orderId}/status`,
+      data,
+      ApiClient.bearerToken(token)
+    );
+
+  cancelOrder = async (
+    data: OrderApiTypes["cancelOrder"]["request"],
+    orderId: string,
+    token: string
+  ) =>
+    await this.client.put<OrderApiTypes["cancelOrder"]["response"]>(
+      `/order/${orderId}/cancel`,
+      data,
       ApiClient.bearerToken(token)
     );
 }

@@ -3,6 +3,7 @@ import express, { Router } from "express";
 import { Logger } from "./Logger";
 import { authRouter } from "./controller/auth";
 import { cartRouter } from "./controller/cart";
+import { orderRouter } from "./controller/order";
 import { productRouter } from "./controller/product";
 import { errorHandler } from "./middleware/error";
 import { HttpStatusCode } from "./utils";
@@ -19,6 +20,7 @@ app.use("/api", apiRouter);
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/product", productRouter);
 apiRouter.use("/cart", cartRouter);
+apiRouter.use("/order", orderRouter);
 
 // Health check endpoint
 apiRouter.get("/health", (req, res) => {

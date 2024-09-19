@@ -4,9 +4,10 @@ import jwt from "jsonwebtoken";
 import { ApiError } from "../error";
 import { asyncHandler } from "../middleware/error";
 import {
-  CreateUserSchema,
   LoginUserSchema,
-  UserJson,
+  NewUser,
+  SerializedUser,
+  serializeUser,
   userModel,
   validators,
 } from "../model/UserModel";
@@ -16,7 +17,7 @@ import { HttpStatusCode } from "../utils";
 export const authRouter = Router();
 
 export interface AuthApiTypes {
-  signup: ApiType<CreateUserSchema, ResponseBody<null>>;
+  signup: ApiType<NewUser, ResponseBody<null>>;
   login: ApiType<LoginUserSchema, ResponseBody<LoginResponse>>;
 }
 
@@ -30,7 +31,7 @@ authRouter.post(
     await userModel.create({
       ...userWithoutPassword,
       password: hashedPassword,
-    });
+    } satisfies NewUser);
     const ret: AuthApiTypes["signup"]["response"] = {
       error: null,
       data: null,
@@ -41,7 +42,7 @@ authRouter.post(
 
 export interface LoginResponse {
   token: string;
-  user: UserJson;
+  user: SerializedUser;
 }
 
 authRouter.post(
@@ -66,7 +67,7 @@ authRouter.post(
       error: null,
       data: {
         token,
-        user: user.toJSON(),
+        user: serializeUser(user),
       },
     };
 

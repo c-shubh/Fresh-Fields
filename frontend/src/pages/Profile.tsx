@@ -67,7 +67,7 @@ function EditMenu() {
                 size="small"
                 type="text"
                 id="username"
-                value={userDetails.username}
+                value={userDetails.name}
                 placeholder="Enter your username"
               />
             </FormGroup>

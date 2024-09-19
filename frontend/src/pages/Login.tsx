@@ -18,11 +18,14 @@ import { errorSnackbar, getErrorMessage, successSnackbar } from "../utils";
 const defaultTheme = createTheme();
 
 export default function SignInSide() {
-  const { account, setAccount } = useAuth();
+  const { setAccount } = useAuth();
 
-  console.log({ account });
   const navigate = useNavigate();
-  const { register, handleSubmit } = useForm<LoginUserSchema>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginUserSchema>();
 
   const onSubmit: SubmitHandler<LoginUserSchema> = async (data) => {
     let errorMessage = "";
@@ -30,7 +33,6 @@ export default function SignInSide() {
       // send request
       const response = await API.login(data);
       // store account details
-      console.log({ data: response.data });
       setAccount(response.data.data);
       // show snackbar
       successSnackbar("Logged in successfully");
@@ -91,22 +93,43 @@ export default function SignInSide() {
               <TextField
                 margin="normal"
                 required
-                type="email"
                 fullWidth
+                type="email"
                 id="email"
                 label="Email Address"
                 autoComplete="email"
-                {...register("email")}
+                // {...register("email")}
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: "Invalid email",
+                  },
+                })}
+                error={!!errors.email}
+                helperText={errors.email ? errors.email.message : ""}
               />
               <TextField
                 margin="normal"
                 required
                 fullWidth
-                label="Password"
                 type="password"
                 id="password"
-                autoComplete="current-password"
-                {...register("password")}
+                label="Password"
+                autoComplete="password"
+                {...register("password", {
+                  required: "Password is required",
+                  minLength: {
+                    value: 8,
+                    message: "Password must be at least 8 characters long",
+                  },
+                  pattern: {
+                    value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}$/,
+                    message: "Must include 1 lowercase, 1 uppercase, 1 number",
+                  },
+                })}
+                error={!!errors.password}
+                helperText={errors.password ? errors.password.message : ""}
               />
               <Button
                 type="submit"

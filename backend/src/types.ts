@@ -18,8 +18,10 @@ export type OmitStrict<T, K extends keyof T> = T extends any
   : never;
 
 export enum UserRole {
-  user = "user",
+  buyer = "buyer",
   seller = "seller",
+  admin = "admin",
+  public = "public",
 }
 
 export interface ResponseBody<Data> {

@@ -1,24 +1,28 @@
 import { faker } from "@faker-js/faker";
-import { CreateProductSchema } from "./model/ProductModel";
-import { CreateUserSchema } from "./model/UserModel";
-import { UserRole } from "./types";
+import { NewProduct } from "./model/ProductModel";
+import { NewUser } from "./model/UserModel";
 
-export function randomUser(role: UserRole): CreateUserSchema {
+interface RandomUserOptions extends Partial<NewUser> {
+  role: NewUser["role"];
+}
+
+export function randomUser(user: RandomUserOptions): NewUser {
   return {
-    email: faker.internet.email(),
-    mobileNumber: faker.phone.number(),
-    password: faker.internet.password(),
-    role,
-    username: faker.internet.userName(),
+    email: user?.email || faker.internet.email(),
+    mobileNumber: user?.mobileNumber || faker.phone.number(),
+    password: user?.password || faker.internet.password(),
+    role: user.role,
+    name: user?.name || faker.person.fullName(),
   };
 }
 
-export function randomProduct(): CreateProductSchema {
+export function randomProduct(): NewProduct {
   return {
     description: faker.commerce.productDescription(),
     imageUrl: faker.image.url(),
     price: faker.number.int({ min: 10, max: 100000 }),
-    productName: faker.commerce.productName(),
+    name: faker.commerce.productName(),
     quantity: faker.number.int({ min: 1, max: 100 }),
+    units: "kg",
   };
 }

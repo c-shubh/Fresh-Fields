@@ -1,77 +1,82 @@
-import mongoose, { InferSchemaType, SchemaTypes } from "mongoose";
+import mongoose, { SchemaTypes, Types, Document } from "mongoose";
 import { InferType, ObjectSchema, number, object, string } from "yup";
 import { OmitStrict, Overwrite } from "../types";
-import { WithId } from "../utils";
+
+interface Product {
+  _id: Types.ObjectId;
+  name: string;
+  description: string;
+  price: number;
+  seller: Types.ObjectId;
+  imageUrl: string;
+  quantity: number;
+  units: string;
+}
+
+type SerializedProduct = Overwrite<
+  Product,
+  {
+    _id: string;
+    seller: string;
+  }
+>;
+
+export function serializeProduct<T extends Product>(
+  product: T
+): SerializedProduct {
+  return {
+    _id: product._id.toHexString(),
+    name: product.name,
+    description: product.description,
+    price: product.price,
+    seller: product.seller.toHexString(),
+    imageUrl: product.imageUrl,
+    quantity: product.quantity,
+    units: product.units,
+  };
+}
 
 const productModelSchema = new mongoose.Schema({
-  imageUrl: {
-    type: String,
-    required: true,
-  },
-  productName: {
-    type: String,
-    required: true,
-  },
-  price: {
-    type: Number,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
-  quantity: {
-    type: Number,
-    required: true,
-  },
-  // User: productsCreated[], Product: ownerId
-  ownerId: {
-    type: SchemaTypes.ObjectId,
-    ref: "User",
-    required: true,
-  },
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  price: { type: Number, required: true },
+  seller: { type: SchemaTypes.ObjectId, ref: "User", required: true },
+  imageUrl: { type: String, required: true },
+  quantity: { type: Number, required: true },
+  // kg, g, etc.
+  units: { type: String, required: true },
 });
 
-["toJSON", "toObject"].forEach((key) =>
-  productModelSchema.set(key as any, {
-    transform(doc: any, ret: any, opt: any) {
-      delete ret["__v"];
-      return ret;
-    },
-  })
-);
-
-productModelSchema.index({ productName: "text", description: "text" });
+// TODO: make the argument type-safe
+productModelSchema.index({ name: "text", description: "text" });
 
 export const productModel = mongoose.model("Product", productModelSchema);
 
-type ProductModelSchema = InferSchemaType<typeof productModelSchema>;
-export type Product = WithId<ProductModelSchema>;
-export type ProductJson = Overwrite<Product, { _id: string; ownerId: string }>;
-
 const createProductValidator: ObjectSchema<
-  OmitStrict<ProductModelSchema, "ownerId">
+  OmitStrict<Product, "_id" | "seller">
 > = object({
   imageUrl: string().url().required(),
-  productName: string().required(),
+  name: string().required(),
   price: number().required(),
   description: string().required(),
   quantity: number().required(),
+  units: string().required(),
 });
 
-export type CreateProductSchema = InferType<typeof createProductValidator>;
+type NewProduct = InferType<typeof createProductValidator>;
 
 const patchProductValidator: ObjectSchema<
-  Partial<OmitStrict<ProductModelSchema, "ownerId">>
+  Partial<OmitStrict<Product, "seller" | "_id">>
 > = object({
   imageUrl: string().url(),
-  productName: string(),
+  name: string(),
   price: number(),
   description: string(),
   quantity: number(),
+  units: string(),
 });
 
-export type PatchProductSchema = InferType<typeof patchProductValidator>;
+type UpdateProduct = InferType<typeof patchProductValidator>;
 
 const searchProductValidator: ObjectSchema<{
   q: string;
@@ -84,3 +89,5 @@ export const validators = {
   patchProduct: patchProductValidator,
   searchProduct: searchProductValidator,
 };
+
+export type { Product, SerializedProduct, NewProduct, UpdateProduct };
